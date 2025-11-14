@@ -1,6 +1,6 @@
 workflows:
   ios-release:
-    name: iOS Release IPA Build
+    name: Flutter iOS IPA Build
     max_build_duration: 60
     environment:
       flutter: stable
@@ -10,7 +10,7 @@ workflows:
       - name: Get Flutter packages
         script: flutter pub get
 
-      - name: Clean iOS folders
+      - name: Clean iOS
         script: |
           rm -rf ios/Pods
           rm -rf ios/Podfile.lock
@@ -23,19 +23,53 @@ workflows:
           pod install --repo-update
           cd ..
 
-      - name: Build Xcode archive (Codemagic CLI)
+      - name: Build Flutter iOS (No Codesign)
         script: |
-          xcode-project build-archive \
-            --project ios/Runner.xcodeproj \
-            --scheme Runner \
-            --archive-path build/ios/archive/Runner.xcarchive
+          flutter build ios --release --no-codesign
 
-      - name: Build IPA (Codemagic CLI)
+      - name: Archive using Xcode
         script: |
-          xcode-project build-ipa \
-            --archive-path build/ios/archive/Runner.xcarchive \
-            --output build/ios/ipa
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            archive \
+            DEVELOPMENT_TEAM="" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Create ExportOptions.plist
+        script: |
+          cat <<EOF > ExportOptions.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>ad-hoc</string>
+              <key>compileBitcode</key>
+              <false/>
+              <key>destination</key>
+              <string>export</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Export IPA
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath build/ios/ipa
 
     artifacts:
       - build/ios/ipa/*.ipa
       - build/ios/archive/*.xcarchive
+
+    publishing:
+      email:
+        recipients:
+          - "ahsanulalam.500@gmail.com"
