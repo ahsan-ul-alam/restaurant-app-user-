@@ -27,17 +27,17 @@ workflows:
         script: |
           flutter build ios --release --no-codesign
 
-      - name: Archive using Xcode
+      - name: Archive using Xcode (forced no-sign)
         script: |
           xcodebuild -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -archivePath build/ios/archive/Runner.xcarchive \
             archive \
-            DEVELOPMENT_TEAM="" \
-            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_IDENTITY="" \
+            DEVELOPMENT_TEAM=""
 
       - name: Create ExportOptions.plist
         script: |
@@ -47,13 +47,13 @@ workflows:
           <plist version="1.0">
           <dict>
               <key>method</key>
-              <string>ad-hoc</string>
+              <string>release-testing</string>
               <key>compileBitcode</key>
               <false/>
-              <key>destination</key>
-              <string>export</string>
               <key>stripSwiftSymbols</key>
               <true/>
+              <key>destination</key>
+              <string>export</string>
           </dict>
           </plist>
           EOF
@@ -68,8 +68,3 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - build/ios/archive/*.xcarchive
-
-    publishing:
-      email:
-        recipients:
-          - "ahsanulalam.500@gmail.com"
