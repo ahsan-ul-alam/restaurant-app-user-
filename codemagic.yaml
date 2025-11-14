@@ -5,19 +5,17 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
-      cocoapods: default
     scripts:
       - name: Get Flutter packages
         script: flutter pub get
 
-      - name: Build iOS release
+      - name: Build iOS (no codesign)
         script: flutter build ipa --release --no-codesign
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - build/ios/archive/*.xcarchive
 
     publishing:
       email:
         recipients:
-          - "your-email@example.com"
+          - "ahsanulalam.500@gmail.com"
