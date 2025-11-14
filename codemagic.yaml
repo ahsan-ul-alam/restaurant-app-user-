@@ -1,41 +1,47 @@
 workflows:
   ios-release:
-    name: iOS Release Build
+    name: iOS Release IPA Build
     max_build_duration: 60
     environment:
       flutter: stable
       xcode: latest
+
     scripts:
-      - name: Get Flutter Packages
+      - name: Get Flutter packages
         script: |
           flutter pub get
 
-      - name: Clean iOS Pods & Cache
+      - name: Clean iOS folders
         script: |
           rm -rf ios/Pods
           rm -rf ios/Podfile.lock
           rm -rf ios/.symlinks
           rm -rf ios/Flutter/Flutter.framework
           rm -rf ios/Flutter/Flutter.podspec
+          rm -rf build/ios
 
-      - name: Update CocoaPods Repo (Fix Firebase version conflict)
+      - name: Install CocoaPods
         script: |
           cd ios
           pod repo update
-          cd ..
-
-      - name: Install iOS Pods Fresh
-        script: |
-          cd ios
           pod install --repo-update
           cd ..
 
-      - name: Build iOS IPA (No Codesign)
+      - name: Build iOS archive (no signing)
         script: |
-          flutter build ipa --no-codesign
+          flutter build ios --release --no-codesign
+
+      - name: Export IPA manually
+        script: |
+          mkdir -p build/ios/ipa
+          xcodebuild -exportArchive \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            -exportOptionsPlist ios/Runner/ExportOptions.plist \
+            -exportPath build/ios/ipa
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/ios/archive/*.xcarchive
 
     publishing:
       email:
