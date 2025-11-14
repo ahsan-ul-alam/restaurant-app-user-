@@ -10,15 +10,29 @@ workflows:
         script: |
           flutter pub get
 
-      - name: Update CocoaPods Repo
+      - name: Clean iOS Pods & Cache
+        script: |
+          rm -rf ios/Pods
+          rm -rf ios/Podfile.lock
+          rm -rf ios/.symlinks
+          rm -rf ios/Flutter/Flutter.framework
+          rm -rf ios/Flutter/Flutter.podspec
+
+      - name: Update CocoaPods Repo (Fix Firebase version conflict)
         script: |
           cd ios
           pod repo update
           cd ..
 
-      - name: Build iOS (No Codesign)
+      - name: Install iOS Pods Fresh
         script: |
-          flutter build ipa --release --no-codesign
+          cd ios
+          pod install --repo-update
+          cd ..
+
+      - name: Build iOS IPA (No Codesign)
+        script: |
+          flutter build ipa --no-codesign
 
     artifacts:
       - build/ios/ipa/*.ipa
