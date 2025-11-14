@@ -1,45 +1,45 @@
 workflows:
   ios-release:
-    name: Flutter iOS IPA Build
+    name: Build iOS IPA (No Sign Patch)
     max_build_duration: 60
     environment:
       flutter: stable
       xcode: latest
 
     scripts:
-      - name: Get Flutter packages
+      - name: Flutter pub get
         script: flutter pub get
 
-      - name: Clean iOS
+      - name: Clean iOS build
         script: |
           rm -rf ios/Pods
           rm -rf ios/Podfile.lock
           rm -rf build/ios
 
-      - name: Install CocoaPods
+      - name: Install Pods
         script: |
           cd ios
           pod repo update
           pod install --repo-update
           cd ..
 
-      - name: Build Flutter iOS (No Codesign)
-        script: |
-          flutter build ios --release --no-codesign
+      - name: Build Flutter iOS (no codesign)
+        script: flutter build ios --release --no-codesign
 
-      - name: Archive using Xcode (forced no-sign)
+      - name: Archive with dummy team
         script: |
           xcodebuild -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -archivePath build/ios/archive/Runner.xcarchive \
             archive \
+            DEVELOPMENT_TEAM="0000000000" \
+            CODE_SIGN_STYLE="Manual" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_IDENTITY="" \
-            DEVELOPMENT_TEAM=""
+            CODE_SIGN_IDENTITY=""
 
-      - name: Create ExportOptions.plist
+      - name: Create ExportOptions.plist (patched)
         script: |
           cat <<EOF > ExportOptions.plist
           <?xml version="1.0" encoding="UTF-8"?>
@@ -48,8 +48,10 @@ workflows:
           <dict>
               <key>method</key>
               <string>release-testing</string>
-              <key>compileBitcode</key>
-              <false/>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>teamID</key>
+              <string>0000000000</string>
               <key>stripSwiftSymbols</key>
               <true/>
               <key>destination</key>
